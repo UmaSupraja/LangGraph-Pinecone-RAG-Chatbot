@@ -1,0 +1,6 @@
+{
+  "name": "LangGraph & Pinecone RAG Chatbot",
+  "description": "Enterprise-grade Retrieval-Augmented Generation (RAG) system with cyclic LangGraph orchestration, Pinecone vector database, and strict grounding verification on the Agentic AI eBook.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
