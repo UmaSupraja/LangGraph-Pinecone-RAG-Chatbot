@@ -54,6 +54,7 @@ app.get('/api/health', async (_req, res) => {
 // Chat & Query execution endpoint returning the exact required payload
 app.post('/api/chat', async (req, res) => {
   const { query } = req.body;
+
   if (!query || typeof query !== 'string' || !query.trim()) {
     return res.status(400).json({ error: 'Query is required.' });
   }
@@ -63,6 +64,7 @@ app.post('/api/chat', async (req, res) => {
     return res.json(result);
   } catch (err: any) {
     console.error('[API /api/chat Error]:', err);
+
     return res.status(500).json({
       error: 'Failed to process RAG query',
       details: err?.message || String(err),
@@ -73,6 +75,7 @@ app.post('/api/chat', async (req, res) => {
 // Chunks list for Knowledge Base Explorer
 app.get('/api/chunks', (_req, res) => {
   const chunks = getAllChunks();
+
   res.json({
     total: chunks.length,
     pages_count: EBOOK_PAGES.length,
@@ -138,8 +141,10 @@ app.get('/api/repo-files', (_req, res) => {
   try {
     if (fs.existsSync(repoDir)) {
       const dirFiles = fs.readdirSync(repoDir);
+
       for (const file of dirFiles) {
         const fullPath = path.join(repoDir, file);
+
         if (fs.statSync(fullPath).isFile()) {
           files[file] = fs.readFileSync(fullPath, 'utf-8');
         }
@@ -155,20 +160,27 @@ app.get('/api/repo-files', (_req, res) => {
 async function startServer() {
   if (isDev) {
     const { createServer: createViteServer } = await import('vite');
+
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
+
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.join(__dirname, 'dist')));
+    // In production, server.js is inside the dist folder.
+    // Therefore __dirname already points to /dist.
+    app.use(express.static(__dirname));
+
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+      res.sendFile(path.join(__dirname, 'index.html'));
     });
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Server] LangGraph & Pinecone RAG running at http://0.0.0.0:${PORT}`);
+    console.log(
+      `[Server] LangGraph & Pinecone RAG running at http://0.0.0.0:${PORT}`
+    );
   });
 }
 
