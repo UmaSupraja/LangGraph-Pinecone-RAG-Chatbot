@@ -52,7 +52,6 @@ interface RAGResponse {
  * while preserving useful formatting such as **bold**.
  */
 function formatAnswerForDisplay(answer: string): string {
-  function formatAnswerForDisplay(answer: string): string {
   return answer
     .replace(/\\\*\\\*/g, '')
     .replace(/\\\*\*/g, '**')
@@ -68,6 +67,7 @@ function formatAnswerForDisplay(answer: string): string {
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
+
 export const PRESET_QUERIES = [
   {
     tag: '1. Definition & Scope',
