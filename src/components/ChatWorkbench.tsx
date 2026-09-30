@@ -52,48 +52,22 @@ interface RAGResponse {
  * while preserving useful formatting such as **bold**.
  */
 function formatAnswerForDisplay(answer: string): string {
+  function formatAnswerForDisplay(answer: string): string {
   return answer
-    // Remove escaped Markdown emphasis such as \*heading\*
     .replace(/\\\*\\\*/g, '')
     .replace(/\\\*\*/g, '**')
     .replace(/\\\*/g, '')
-
-    // Convert escaped headings:
-    // \### Heading -> ### Heading
     .replace(/^\\(#{1,6})\s*/gm, '$1 ')
-
-    // Convert escaped star bullets:
-    // \* Item -> • Item
     .replace(/^\\\*\s+/gm, '• ')
-
-    // Convert normal star bullets:
-    // * Item -> • Item
     .replace(/^\*\s+/gm, '• ')
-
-    // Convert escaped dash bullets:
-    // \- Item -> • Item
     .replace(/^\\-\s+/gm, '• ')
-
-    // Convert normal dash bullets:
-    // - Item -> • Item
     .replace(/^-\s+/gm, '• ')
-
-    // Convert escaped numbered list dots:
-    // 01\. Text -> 01. Text
     .replace(/^(\s*\d+)\\\.\s*/gm, '$1. ')
-
-    // Normalize normal numbered list formatting
     .replace(/^(\s*\d+)\.\s*/gm, '$1. ')
-
-    // Remove remaining unnecessary backslashes before Markdown characters
     .replace(/\\([*_#])/g, '$1')
-
-    // Clean excessive blank lines
     .replace(/\n{3,}/g, '\n\n')
-
     .trim();
 }
-
 export const PRESET_QUERIES = [
   {
     tag: '1. Definition & Scope',
