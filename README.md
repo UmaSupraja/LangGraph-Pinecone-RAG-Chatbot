@@ -1,374 +1,359 @@
-# LangGraph & Pinecone RAG Chatbot
+LangGraph & Pinecone RAG Chatbot
 
-> An end-to-end Retrieval-Augmented Generation (RAG) application for
-> answering questions from the **Agentic AI for Executives** knowledge
-> base using **Google Gemini**, **Pinecone**, **LangGraph**,
-> **FastAPI**, and a **React/Vite** interface.
+An end-to-end Retrieval-Augmented Generation (RAG) chatbot grounded in the Agentic AI for Executives knowledge base by Konverge.AI & Emergence AI.
 
-------------------------------------------------------------------------
+The project combines Google Gemini, Pinecone, LangGraph concepts, TypeScript/Express, React/Vite, and a separate Python LangGraph + FastAPI reference implementation.
 
-## 1. Project Overview
 
-This project implements a grounded RAG chatbot designed around a fixed
-knowledge base: **Agentic AI for Executives** by Konverge.AI & Emergence
-AI.
+Production: https://langgraph-pinecone-rag-chatbot.onrender.com/
 
-The system is designed to:
+The production application is deployed on Render and uses the TypeScript/Express implementation.
 
--   retrieve relevant knowledge-base content before answering;
--   use vector similarity search through Pinecone;
--   generate answers with Google Gemini;
--   keep generated answers grounded in retrieved context;
--   detect out-of-scope questions and refuse unsupported requests;
--   calculate a confidence score;
--   expose the Python RAG pipeline through a FastAPI REST API;
--   provide a React/Vite web interface for interactive use;
--   provide an ingestion pipeline for converting the source PDF into
-    Pinecone vectors;
--   provide a benchmark suite for validating the core RAG scenarios.
+📌 Project Overview
 
-### Important implementation note
+This project implements a grounded RAG system designed around a fixed knowledge base:
 
-The repository contains **two related application layers**:
+Agentic AI for Executives
 
-1.  **Python LangGraph + FastAPI implementation** --- the reference
-    implementation for the LangGraph RAG pipeline.
-2.  **React/Vite + TypeScript server implementation** --- the
-    interactive web application and UI. Its server-side RAG workflow is
-    implemented in TypeScript rather than using the Python LangGraph
-    graph directly.
+The system:
 
-They share the same overall RAG concepts and Pinecone/Gemini services,
-but they are not the same runtime implementation.
+Retrieves relevant knowledge-base content before answering.
 
-------------------------------------------------------------------------
+Uses Gemini embeddings with Pinecone vector search.
 
-## 2. High-Level Architecture
+Generates answers with Google Gemini.
 
-### Python LangGraph architecture
+Keeps answers grounded in retrieved context.
 
-``` text
-                         User Query
-                             |
-                             v
-                    +-------------------+
-                    |   Retrieve Node   |
-                    | Gemini Embedding  |
-                    |     + Pinecone    |
-                    +---------+---------+
-                              |
-                              v
-                    +-------------------+
-                    | Grade Documents   |
-                    | Relevance / Scope |
-                    +---------+---------+
-                              |
-                   +----------+----------+
-                   |                     |
-              Relevant              Not relevant
-                   |                     |
-                   v                     v
-          +----------------+      +-------------+
-          | Generate Node  |      | Refuse Node |
-          | Gemini LLM     |      | Safe reject |
-          +-------+--------+      +------+------+
-                  |                      |
-                  v                      |
-          +---------------------+        |
-          | Grade Groundedness  |        |
-          | Hallucination check |        |
-          | Confidence score    |        |
-          +----------+----------+        |
-                     |                   |
-                     +---------+---------+
-                               |
-                               v
-                         JSON Response
-```
+Detects out-of-scope questions and refuses unsupported requests.
 
-### Web application architecture
+Evaluates answer groundedness.
 
-``` text
-React / Vite UI
-       |
-       v
-Express server
-       |
-       v
-TypeScript RAG workflow
-       |
-       +--------------------+
-       |                    |
-       v                    v
-Gemini Embeddings       Pinecone
-       |                    |
-       +---------+----------+
-                 |
-                 v
-          Hybrid Retrieval
-     (lexical + vector score)
-                 |
-                 v
-        Relevance / Scope Check
-                 |
-                 v
-           Gemini Generation
-                 |
-                 v
-       Grounded response + metadata
-```
+Produces a confidence score.
 
-------------------------------------------------------------------------
+Provides a React/Vite interactive web interface.
 
-## 3. Core RAG Workflow
+Includes a Python LangGraph + FastAPI reference implementation.
 
-The Python implementation uses a LangGraph `StateGraph` to orchestrate
-the pipeline.
+Includes an ingestion pipeline for converting the source PDF into Pinecone vectors.
 
-### Node 1 --- Retrieve
+Includes benchmark/validation scenarios for core RAG behavior.
 
-The user query is converted into a vector using:
+Important implementation note
 
-``` text
+The repository contains two related application layers:
+
+Python LangGraph + FastAPI — reference implementation for the LangGraph RAG pipeline.
+
+React/Vite + TypeScript/Express — the production web application and UI. Its server-side RAG workflow is implemented in TypeScript rather than running the Python LangGraph graph directly.
+
+They share the same RAG concepts, Gemini services, Pinecone index, and knowledge-base approach, but they are not the same runtime implementation.
+
+🏗️ Architecture
+
+Production Web Application
+
+                    User
+                      |
+                      v
+             React / Vite UI
+                      |
+                      v
+               Express Server
+                      |
+                      v
+           TypeScript RAG Workflow
+                      |
+          +-----------+-----------+
+          |                       |
+          v                       v
+   Gemini Embeddings          Pinecone
+          |                       |
+          +-----------+-----------+
+                      |
+                      v
+             Hybrid Retrieval
+        (lexical + vector scoring)
+                      |
+                      v
+             Relevance / Scope
+                  Check
+                      |
+          +-----------+-----------+
+          |                       |
+       Relevant              Out of scope
+          |                       |
+          v                       v
+   Gemini Generation          Refusal
+          |
+          v
+    Groundedness Check
+          |
+          v
+   Final Answer + Metadata
+
+Python LangGraph Reference Workflow
+
+User Query
+    |
+    v
+Retrieve
+(Gemini Embedding + Pinecone)
+    |
+    v
+Grade Documents
+(Relevance / Scope)
+    |
+    +----------------------+
+    |                      |
+ Relevant              Not Relevant
+    |                      |
+    v                      v
+Generate                 Refuse
+    |
+    v
+Grade Groundedness
+(Hallucination Check)
+    |
+    v
+Confidence Score
+    |
+    v
+JSON Response
+
+🔄 Core RAG Workflow
+
+1. Retrieve
+
+The user query is converted into an embedding using:
+
 gemini-embedding-2-preview
-```
 
-The vector is sent to Pinecone and the top matching chunks are retrieved
-with metadata such as:
+The embedding is searched against Pinecone to retrieve relevant chunks containing metadata such as:
 
--   chunk ID;
--   page number;
--   source;
--   chunk text;
--   similarity score.
+Chunk ID
 
-### Node 2 --- Grade Documents
+Page number
 
-The retrieved context is evaluated for relevance to the question.
+Source
 
-The grader determines whether:
+Chunk text
 
--   the retrieved context can answer the question;
--   the question is related to the Agentic AI knowledge base;
--   the query should continue to generation or be rejected.
+Similarity score
 
-### Node 3 --- Generate
+2. Grade Documents
 
-For relevant queries, Gemini generates an answer using the retrieved
-context.
+The retrieved context is evaluated for:
 
-The generation instructions explicitly require the model to:
+Relevance to the question.
 
--   answer from the retrieved knowledge;
--   avoid unsupported external information;
--   avoid extrapolating beyond the supplied context;
--   state when the context is insufficient.
+Whether the query belongs to the Agentic AI knowledge domain.
 
-### Node 4 --- Grade Groundedness
+Whether the retrieved material is sufficient to continue.
 
-The generated answer is checked against the retrieved context.
+3. Generate
 
-The system evaluates:
+For supported queries, Gemini generates an answer using the retrieved context.
 
--   whether the answer is grounded;
--   whether unsupported claims were introduced;
--   a confidence score.
+The generation workflow is designed to:
 
-The final confidence value combines the groundedness evaluation with the
-earlier relevance score.
+Answer from retrieved knowledge.
 
-### Node 5 --- Refuse
+Avoid unsupported external information.
 
-If the query is out of scope or insufficiently supported, the workflow
-returns a refusal instead of inventing an answer.
+Avoid extrapolating beyond supplied context.
+
+State when the available context is insufficient.
+
+4. Grade Groundedness
+
+The generated answer is evaluated against the retrieved context.
+
+The system checks:
+
+Whether the answer is grounded.
+
+Whether unsupported claims were introduced.
+
+A groundedness/relevance-based confidence score.
+
+5. Refuse
+
+If the question is outside the supported knowledge base or the retrieved context is insufficient, the system returns a refusal instead of inventing an answer.
 
 Example:
 
-``` text
 What is the capital of France?
-```
 
-This is outside the Agentic AI knowledge base and should be rejected
-rather than answered from general world knowledge.
+This is outside the Agentic AI knowledge base and should be rejected.
 
-------------------------------------------------------------------------
-
-## 4. Knowledge Base
+📚 Knowledge Base
 
 The intended source document is:
 
-**Agentic AI for Executives**
+Agentic AI for Executives
 
 The Python ingestion pipeline expects:
 
-``` text
-Ebook-Agentic-AI.pdf
-```
+python_submission/Ebook-Agentic-AI.pdf
 
-The ingestion process:
+Ingestion pipeline
 
-1.  reads the PDF;
-2.  extracts page text using `pypdf`;
-3.  splits the text into chunks;
-4.  preserves page/source metadata;
-5.  generates embeddings;
-6.  uploads vectors to Pinecone.
+PDF
+ |
+ v
+Page Text Extraction
+ |
+ v
+Chunking
+ |
+ v
+Gemini Embeddings
+ |
+ v
+3072-dimensional Vectors
+ |
+ v
+Pinecone Upsert
 
-### Chunking
+Chunking
 
 The ingestion implementation uses approximately:
 
-``` text
 Chunk size: 750 characters
 Overlap:    100 characters
-```
 
-The design keeps chunks within the requested 500--1000 character range
-where possible and attempts to split at natural sentence/newline
-boundaries.
+The implementation attempts to preserve natural sentence/newline boundaries.
 
-### Metadata stored in Pinecone
+Pinecone metadata
 
 Each vector contains metadata similar to:
 
-``` json
 {
   "chunk_id": "page-1-chunk-0",
   "page": 1,
   "source": "Ebook-Agentic-AI.pdf",
   "text": "..."
 }
-```
 
-------------------------------------------------------------------------
+The original PDF binary is not included in the repository package. A fresh ingestion therefore requires an authorized copy of the source PDF.
 
-## 5. Embeddings and Vector Database
+🧠 Embeddings & Vector Database
 
-### Embedding model
+Embedding Model
 
-``` text
 gemini-embedding-2-preview
-```
 
-The project expects a **3072-dimensional** embedding vector.
+Expected vector dimension:
 
-### Pinecone
+3072
 
-Default index name:
+Pinecone
 
-``` text
+Default index:
+
 agentic-ai-rag
-```
 
-The Pinecone index must be configured with a vector dimension compatible
-with the embedding model used by the project.
+The Pinecone index dimension must match the embedding model configuration.
 
-Do not create a different dimension unless you also change the
-embedding/index configuration consistently.
-
-------------------------------------------------------------------------
-
-## 6. LLM / Generation
+🤖 LLM / Generation
 
 The Python implementation uses:
 
-``` text
 gemini-3.8-flash
-```
 
 for:
 
--   document relevance grading;
--   grounded answer generation;
--   groundedness/hallucination evaluation.
+Document relevance grading
 
-The TypeScript web implementation also contains a resilient model
-fallback sequence for generation.
+Grounded answer generation
 
-------------------------------------------------------------------------
+Groundedness/hallucination evaluation
 
-## 7. API Response Contract
+The TypeScript production implementation also uses a resilient generation-model fallback sequence.
 
-The main Python API returns:
+🌐 API Response Contract
 
-``` json
+The Python API returns a structured response similar to:
+
 {
   "query": "What is Agentic AI?",
-  "final_answer": "....",
+  "final_answer": "...",
   "retrieved_context_chunks": [
-    "....",
-    "...."
+    "...",
+    "..."
   ],
   "confidence_score": 0.94
 }
-```
 
-### Fields
+Response fields
 
-  ----------------------------------------------------------------------------
-  Field                        Type                    Description
-  ---------------------------- ----------------------- -----------------------
-  `query`                      string                  Original user question
+Field
 
-  `final_answer`               string                  Grounded answer
-                                                       generated by the system
+Type
 
-  `retrieved_context_chunks`   array                   Text chunks retrieved
-                                                       from Pinecone
+Description
 
-  `confidence_score`           number                  Final confidence value
-                                                       between 0 and 1
-  ----------------------------------------------------------------------------
+query
 
-------------------------------------------------------------------------
+string
 
-## 8. Python API Endpoints
+Original user question
 
-The FastAPI application is located at:
+final_answer
 
-``` text
+string
+
+Grounded answer generated by the system
+
+retrieved_context_chunks
+
+array
+
+Text chunks retrieved from Pinecone
+
+confidence_score
+
+number
+
+Final confidence value between 0 and 1
+
+🐍 Python FastAPI API
+
+The Python API is located at:
+
 python_submission/app.py
-```
 
-### `GET /`
+GET /
 
 Returns basic service information.
 
-### `GET /health`
+GET /health
 
 Checks whether the API can access the configured Pinecone index.
 
 Example:
 
-``` text
 http://localhost:8000/health
-```
 
-### `POST /query`
+POST /query
 
 Accepts:
 
-``` json
 {
   "query": "What is the core definition of Agentic AI?"
 }
-```
 
 Returns the structured RAG response.
 
-### Swagger UI
+Swagger UI
 
-FastAPI automatically provides interactive API documentation:
+FastAPI automatically provides:
 
-``` text
 http://localhost:8000/docs
-```
 
-------------------------------------------------------------------------
+📁 Project Structure
 
-## 9. Project Structure
-
-``` text
 .
 ├── README.md
 ├── .env.example
@@ -410,140 +395,138 @@ http://localhost:8000/docs
     ├── ingest.py
     ├── rag_graph.py
     └── test_benchmark.py
-```
 
-------------------------------------------------------------------------
+🛠️ Technologies Used
 
-## 10. Technologies Used
+AI / Backend
 
-### Backend / AI
+Python
 
--   Python
--   LangGraph
--   LangChain
--   Google GenAI SDK
--   Gemini
--   Pinecone
--   FastAPI
--   Uvicorn
--   Pydantic
--   pypdf
--   python-dotenv
+LangGraph
 
-### Frontend / Web
+LangChain
 
--   React
--   TypeScript
--   Vite
--   Express
--   Tailwind CSS
--   Motion
--   Lucide React
--   Google GenAI SDK
+Google GenAI SDK
 
-### Architecture concepts
+Google Gemini
 
--   Retrieval-Augmented Generation (RAG)
--   Vector similarity search
--   Hybrid retrieval
--   State-machine orchestration
--   Context grounding
--   Out-of-scope detection
--   Hallucination evaluation
--   Confidence scoring
--   REST API design
+Pinecone
 
-------------------------------------------------------------------------
+FastAPI
 
-## 11. Local Setup --- Python LangGraph API
+Uvicorn
 
-### Prerequisites
+Pydantic
+
+pypdf
+
+python-dotenv
+
+Frontend / Web
+
+React
+
+TypeScript
+
+Vite
+
+Express
+
+Tailwind CSS
+
+Motion
+
+Lucide React
+
+Google GenAI SDK
+
+Architecture Concepts
+
+Retrieval-Augmented Generation (RAG)
+
+Vector similarity search
+
+Hybrid retrieval
+
+State-based orchestration
+
+Context grounding
+
+Out-of-scope detection
+
+Hallucination evaluation
+
+Confidence scoring
+
+REST API design
+
+AI system validation
+
+⚙️ Local Setup — Python LangGraph API
+
+Prerequisites
 
 Recommended:
 
-``` text
 Python 3.12
 Node.js 22 LTS
 npm
 Pinecone account
 Google AI / Gemini API access
-```
 
-Python 3.14 may work for individual packages, but Python 3.12 is
-recommended for a more predictable LangChain/LangGraph environment.
+Python 3.14 may work for individual packages, but Python 3.12 is recommended for a predictable LangChain/LangGraph environment.
 
-### Create a virtual environment
+1. Create a virtual environment
 
 Windows PowerShell:
 
-``` powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
-```
 
-Upgrade pip:
+2. Upgrade pip
 
-``` powershell
 python -m pip install --upgrade pip
-```
 
-Install dependencies:
+3. Install Python dependencies
 
-``` powershell
 pip install -r python_submission\requirements.txt
-```
 
-### Configure environment variables
+4. Configure environment variables
 
-Create a `.env` file using the example as a template:
+Create a .env file using .env.example as a template:
 
-``` env
 GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 PINECONE_API_KEY="YOUR_PINECONE_API_KEY"
 PINECONE_INDEX_NAME="agentic-ai-rag"
-```
 
 Never commit real API keys to GitHub.
 
-### Run the API
+5. Run the Python API
 
-``` powershell
 cd python_submission
 uvicorn app:app --host 0.0.0.0 --port 8000 --reload
-```
 
 Open:
 
-``` text
 http://localhost:8000/docs
-```
 
-------------------------------------------------------------------------
-
-## 12. Data Ingestion
+📥 Data Ingestion
 
 The ingestion script is:
 
-``` text
 python_submission/ingest.py
-```
 
-Place the source PDF where the script expects it:
+Place the authorized source PDF at:
 
-``` text
 python_submission/Ebook-Agentic-AI.pdf
-```
 
-Then run:
+Run:
 
-``` powershell
 cd python_submission
 python ingest.py
-```
 
-The script:
+The script performs:
 
-``` text
 PDF
  ↓
 Text extraction
@@ -555,463 +538,370 @@ Gemini embeddings
 3072-dimensional vectors
  ↓
 Pinecone upsert
-```
 
-### Important repository note
+A fresh user must provide the authorized source PDF before running ingestion unless the target Pinecone index has already been populated.
 
-The supplied project package does not include the original PDF binary.
-Therefore, a fresh user must provide the authorized source PDF before
-running ingestion, unless the target Pinecone index has already been
-populated.
-
-The ingestion script also contains a fallback path for:
-
-``` text
-src/data/ebook_pages.json
-```
-
-but that JSON corpus is not present in the supplied project package.
-
-------------------------------------------------------------------------
-
-## 13. Run the React Web Application
+💻 Run the React Web Application
 
 From the project root:
 
-``` powershell
 npm install
 npm run dev
-```
 
-The development server is started by:
+The application is served by:
 
-``` text
 server.ts
-```
 
-The application is expected to be available at:
+Expected local URL:
 
-``` text
 http://localhost:3000
-```
 
-### Frontend environment
+Frontend environment
 
-The TypeScript server uses the root `.env`.
+The TypeScript server uses the root .env.
 
-Use your own credentials:
+Example:
 
-``` env
 GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 PINECONE_API_KEY="YOUR_PINECONE_API_KEY"
 PINECONE_INDEX_NAME="agentic-ai-rag"
 PINECONE_HOST="YOUR_PINECONE_INDEX_HOST"
 PORT=3000
-```
 
-------------------------------------------------------------------------
+✨ Frontend Features
 
-## 14. Frontend Features
-
-The React application includes UI components for:
-
-### Chat Workbench
+Chat Workbench
 
 Interactive question-and-answer interface for the RAG system.
 
-### Graph Visualizer
+Graph Visualizer
 
 Visualizes the RAG execution flow and node states.
 
-### Knowledge Base Explorer
+Knowledge Base Explorer
 
-Displays information about the indexed knowledge base.
+Provides visibility into the indexed knowledge base.
 
-### Pinecone Manager
+Pinecone Manager
 
-Provides Pinecone/index-related visibility in the application.
+Provides Pinecone/index-related visibility.
 
-### Validation Suite
+Validation Suite
 
-Provides a UI-oriented validation experience for the expected RAG
-scenarios.
+Provides UI-oriented validation for expected RAG scenarios.
 
-### Simple Chatbot
+Simple Chatbot
 
 Provides a simplified conversational interface.
 
-------------------------------------------------------------------------
-
-## 15. Benchmark / Validation Suite
+🧪 Benchmark / Validation
 
 The Python benchmark is:
 
-``` text
 python_submission/test_benchmark.py
-```
 
 Run:
 
-``` powershell
 cd python_submission
 python test_benchmark.py
-```
 
-The intended validation categories include:
+Validation categories include:
 
-1.  Definition and scope of Agentic AI.
-2.  Agentic system architecture and paradigms.
-3.  Real-world Agentic AI use cases.
-4.  Agentic AI versus traditional/Generative AI chatbots.
-5.  Challenges, limitations, and governance.
-6.  Out-of-scope query rejection.
+Definition and scope of Agentic AI.
 
-Example in-scope query:
+Agentic system architecture and paradigms.
 
-``` text
+Real-world Agentic AI use cases.
+
+Agentic AI versus traditional/Generative AI chatbots.
+
+Challenges, limitations, and governance.
+
+Out-of-scope query rejection.
+
+Example in-scope query
+
 What are the six pillars of Agentic AI?
-```
 
-Example out-of-scope query:
+Example out-of-scope query
 
-``` text
 What is the capital of France?
-```
 
-The second query should be rejected because it is not supported by the
-target knowledge base.
+The second query should be rejected because it is not supported by the target knowledge base.
 
-------------------------------------------------------------------------
+🧩 Example Questions
 
-## 16. Example API Request
+In-scope
 
-Using PowerShell:
-
-``` powershell
-Invoke-RestMethod `
-  -Uri "http://localhost:8000/query" `
-  -Method POST `
-  -ContentType "application/json" `
-  -Body '{"query":"What is the core definition of Agentic AI?"}'
-```
-
-Example response shape:
-
-``` json
-{
-  "query": "What is the core definition of Agentic AI?",
-  "final_answer": "....",
-  "retrieved_context_chunks": [
-    "...."
-  ],
-  "confidence_score": 0.94
-}
-```
-
-------------------------------------------------------------------------
-
-## 17. Example Questions
-
-### In-scope
-
-``` text
 What is Agentic AI?
-```
 
-``` text
 What are the six pillars of Agentic AI?
-```
 
-``` text
 How does Agentic AI differ from traditional generative AI chatbots?
-```
 
-``` text
 What are the major challenges of implementing Agentic AI?
-```
 
-``` text
 What industries are discussed as Agentic AI use cases?
-```
 
-### Out-of-scope
+Out-of-scope
 
-``` text
 What is the capital of France?
-```
 
-``` text
 What is today's weather?
-```
 
-``` text
 Give me a cake recipe.
-```
 
-The system is designed to avoid answering unrelated questions from
-general model knowledge.
+The system is designed to avoid answering unrelated questions from general model knowledge.
 
-------------------------------------------------------------------------
+🛡️ Grounding & Hallucination Control
 
-## 18. Grounding and Hallucination Control
+The project uses multiple controls rather than relying only on an LLM prompt.
 
-The project uses multiple controls rather than relying only on the LLM
-prompt.
-
-### Retrieval grounding
+Retrieval grounding
 
 Answers are generated from retrieved knowledge-base chunks.
 
-### Relevance grading
+Relevance grading
 
-The system checks whether retrieved material is relevant to the user's
-query.
+The system checks whether retrieved material is relevant to the user's query.
 
-### Scope filtering
+Scope filtering
 
 Unrelated questions can be routed to a refusal path.
 
-### Groundedness grading
+Groundedness grading
 
-The generated answer is evaluated against the retrieved context.
+The generated answer is evaluated against retrieved context.
 
-### Confidence score
+Confidence score
 
-The final score is derived from the groundedness evaluation and context
-relevance.
+The final score combines the groundedness evaluation with context relevance.
 
-This creates the following safety-oriented flow:
-
-``` text
 Retrieve
    ↓
 Relevant?
    ├── No → Refuse
    └── Yes
-          ↓
-       Generate
-          ↓
-   Groundedness check
-          ↓
-    Final response
-```
+        ↓
+     Generate
+        ↓
+ Groundedness Check
+        ↓
+ Final Response
 
-------------------------------------------------------------------------
+🔐 Security & Secrets
 
-## 19. Security and Secrets
-
-### Never commit API keys
+Never commit API keys or other credentials.
 
 Do not commit:
 
-``` text
 .env
-```
 
 or any file containing real credentials.
 
 Use:
 
-``` text
 .env.example
-```
 
 with placeholders only:
 
-``` env
 GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 PINECONE_API_KEY="YOUR_PINECONE_API_KEY"
 PINECONE_INDEX_NAME="agentic-ai-rag"
-```
 
-If a real API key has previously been exposed in source control, logs,
-screenshots, or a public repository, revoke/rotate it and replace it
-with a new credential.
+If a real API key has previously been exposed in source control, logs, screenshots, or a public repository, revoke/rotate it and replace it with a new credential.
 
-------------------------------------------------------------------------
+🚀 Production Deployment
 
-## 20. Common Setup Issues
+The current production web application is deployed on Render.
 
-### `ModuleNotFoundError`
+Production URL
+
+https://langgraph-pinecone-rag-chatbot.onrender.com/
+
+Production architecture
+
+Internet
+   |
+   v
+React / Vite Web Client
+   |
+   v
+Express Server
+   |
+   v
+TypeScript RAG Workflow
+   |
+   +------------------+
+   |                  |
+   v                  v
+Gemini             Pinecone
+   |                  |
+   +--------+---------+
+            |
+            v
+     Grounded RAG Response
+
+The production service builds the Vite frontend and bundles the TypeScript server before starting the application.
+
+Production build
+
+npm run build
+
+Production start
+
+npm start
+
+The application runs the bundled server from:
+
+dist/server.js
+
+🔧 Common Setup Issues
+
+ModuleNotFoundError
 
 Make sure the virtual environment is active:
 
-``` powershell
 .\venv\Scripts\Activate.ps1
-```
 
 Then install:
 
-``` powershell
 pip install -r python_submission\requirements.txt
-```
 
-### `npm ERESOLVE`
+npm dependency conflict
 
-The frontend has Vite/esbuild peer-dependency requirements. If npm
-reports a Vite/esbuild conflict, install a compatible esbuild release or
-use the project's dependency versions consistently before retrying
-`npm install`.
+If npm reports a Vite/esbuild peer-dependency conflict, use the dependency versions defined by the project and reinstall:
 
-### Pinecone connection failure
+npm install
+
+Pinecone connection failure
 
 Check:
 
-``` text
 PINECONE_API_KEY
 PINECONE_INDEX_NAME
 PINECONE_HOST
-```
 
-and verify that the index exists and its vector dimension matches the
-embedding model.
+Also verify that:
 
-### Empty retrieval results
+The Pinecone index exists.
 
-The Pinecone index must already contain embeddings generated from the
-same knowledge base and compatible embedding model.
+The index dimension matches the embedding configuration.
 
-### Ingestion cannot find the PDF
+The index contains vectors generated from the intended knowledge base.
+
+Empty retrieval results
+
+The Pinecone index must already contain embeddings generated from the same knowledge base and compatible embedding model.
+
+Ingestion cannot find the PDF
 
 Place the authorized source document at:
 
-``` text
 python_submission/Ebook-Agentic-AI.pdf
-```
 
-and rerun:
+Then run:
 
-``` powershell
 python ingest.py
-```
 
-------------------------------------------------------------------------
-
-## 21. Production Considerations
-
-Before production deployment, the following should be addressed:
-
--   store secrets only in the deployment platform's secret manager;
--   remove any hardcoded credentials;
--   restrict CORS instead of using `allow_origins=["*"]`;
--   add authentication/authorization if the API is not public;
--   add request rate limiting;
--   add structured application logging;
--   add retry/backoff handling for model and Pinecone failures;
--   validate Pinecone index configuration at startup;
--   monitor model/API quota usage;
--   add automated tests for retrieval and refusal behavior;
--   pin dependency versions for reproducible deployments.
-
-------------------------------------------------------------------------
-
-## 22. Deployment Concept
-
-A production deployment can be structured as:
-
-``` text
-                    Internet
-                       |
-                       v
-                React Web Client
-                       |
-                       v
-                 FastAPI API
-                       |
-             +---------+---------+
-             |                   |
-             v                   v
-          Gemini             Pinecone
-             |                   |
-             +---------+---------+
-                       |
-                       v
-                 RAG Response
-```
-
-The React application and Python API can be deployed separately, or the
-application can be packaged according to the deployment environment.
-
-------------------------------------------------------------------------
-
-## 23. What This Project Demonstrates
+📊 What This Project Demonstrates
 
 This project demonstrates practical implementation of:
 
--   RAG architecture;
--   document ingestion;
--   semantic embeddings;
--   vector databases;
--   Pinecone retrieval;
--   LangGraph state-based orchestration;
--   LLM-based generation;
--   document relevance grading;
--   groundedness verification;
--   hallucination reduction;
--   confidence scoring;
--   out-of-scope query handling;
--   FastAPI API development;
--   React/TypeScript application development;
--   AI system validation and benchmarking.
+RAG architecture
 
-------------------------------------------------------------------------
+Document ingestion
 
-## 24. Quick Start
+Semantic embeddings
 
-### Python API
+Vector databases
 
-``` powershell
+Pinecone retrieval
+
+LangGraph state-based orchestration
+
+LLM-based generation
+
+Document relevance grading
+
+Groundedness verification
+
+Hallucination reduction
+
+Confidence scoring
+
+Out-of-scope query handling
+
+FastAPI API development
+
+React/TypeScript application development
+
+AI system validation and benchmarking
+
+Production deployment
+
+⚡ Quick Start
+
+React / Production Web Application
+
+npm install
+npm run dev
+
+Open:
+
+http://localhost:3000
+
+Python API
+
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r python_submission\requirements.txt
-
 cd python_submission
 uvicorn app:app --host 0.0.0.0 --port 8000 --reload
-```
 
 Open:
 
-``` text
 http://localhost:8000/docs
-```
 
-### React application
+📌 Project Status
 
-From the project root:
+The repository currently contains:
 
-``` powershell
-npm install
-npm run dev
-```
+Production React/Vite frontend
 
-Open:
+TypeScript/Express server
 
-``` text
-http://localhost:3000
-```
+TypeScript RAG workflow
 
-------------------------------------------------------------------------
+Python LangGraph reference workflow
 
-## 25. Project Status
+Pinecone service integration
 
-The repository contains the implementation, frontend, Python LangGraph
-workflow, ingestion pipeline, API layer, and validation code.
+Gemini integration
 
-For a clean fresh installation, the user must provide:
+PDF ingestion pipeline
 
--   their own Gemini API key;
--   their own Pinecone API key;
--   a correctly configured Pinecone index;
--   the authorized source PDF if a fresh ingestion is required.
+FastAPI API
 
-The existing source package should be treated as code to configure and
-run, not as a distribution of third-party API credentials.
+Validation/benchmark code
 
-------------------------------------------------------------------------
+Production Render deployment
 
-## 26. Author / Project Role
-### Author
-**Supraja Putrevu**
+For a clean fresh installation, provide:
+
+Your own Gemini API key.
+
+Your own Pinecone API key.
+
+A correctly configured Pinecone index.
+
+The authorized source PDF if fresh ingestion is required.
+
+The repository should be treated as application source code to configure and run, not as a distribution of third-party API credentials.
+
+👩‍💻 Author
+
+Supraja Putrevu
 
 B.Tech – Computer Science & Engineering (Data Science)
 
@@ -1019,9 +909,14 @@ Python Developer | AI Enthusiast | Data Science | Machine Learning
 
 GitHub: https://github.com/UmaSupraja
 
+Project: LangGraph & Pinecone RAG Chatbot
 
-**Project:** LangGraph & Pinecone RAG Chatbot
+Primary Focus
 
-**Primary focus:** Retrieval-Augmented Generation, agentic workflow
-orchestration, vector search, grounded generation, evaluation, and AI
-application development.
+Retrieval-Augmented Generation, agentic workflow orchestration, vector search, grounded generation, evaluation, and AI application development.
+
+📄 License / Source Material
+
+This repository contains application code and project configuration. The source eBook is not redistributed as part of the repository.
+
+Users should provide and use the source document only when they have the appropriate authorization to do so.
