@@ -1010,7 +1010,14 @@ run, not as a distribution of third-party API credentials.
 ------------------------------------------------------------------------
 
 ## 26. Author / Project Role
+### Author
+**Supraja Putrevu**
 
+B.Tech – Computer Science & Engineering (Data Science)
+
+Python Developer | AI Enthusiast | Data Science | Machine Learning
+
+GitHub: https://github.com/UmaSupraja
 **Role:** AI Engineer
 
 **Project:** LangGraph & Pinecone RAG Chatbot
