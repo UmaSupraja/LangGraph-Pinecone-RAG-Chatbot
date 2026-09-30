@@ -1018,7 +1018,7 @@ B.Tech – Computer Science & Engineering (Data Science)
 Python Developer | AI Enthusiast | Data Science | Machine Learning
 
 GitHub: https://github.com/UmaSupraja
-**Role:** AI Engineer
+
 
 **Project:** LangGraph & Pinecone RAG Chatbot
 
